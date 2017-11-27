@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<script type="text/javascript" src="phaser.min.js"></script>
+</head>
+<body>
+	<div id="plane"></div>
+	<script type="text/javascript">
+		var game=new Phaser.Game(240,400,Phaser.CANVAS,"#plane",{
+			preload:preload,
+			create:create,
+			update:update,
+		});
+		function preload(){
+			console.log('preload');
+		}
+		function create(){
+			console.log('create')
+		}
+		function update(){
+			console.log('update')
+		}
+
+	</script>
+</body>
+</html>
