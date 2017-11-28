@@ -3,6 +3,15 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Document</title>
+	<style type="text/css">
+		body{
+			margin:0;
+			padding: 0;
+		}
+		canvas{
+			margin: 0 auto;
+		}
+	</style>
 	<script type="text/javascript" src="phaser.min.js"></script>
 </head>
 <body>
@@ -15,6 +24,9 @@
 		game.States.boot=function(){
 			this.preload=function(){
 				game.load.image('loading','assets/flybird/preloader.gif');
+				if (!game.device.desktop) {
+					game.scale.scaleMode=Phaser.ScaleManager.EXACT_FIT;
+				}
 			}
 			this.create=function(){
 				game.state.start('preload');
