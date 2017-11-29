@@ -3,26 +3,135 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Document</title>
+	<style type="text/css">
+		body{
+			margin: 0;
+			padding: 0;
+		}
+		canvas{
+			margin: 0 auto;
+		}
+	</style>
 	<script type="text/javascript" src="phaser.min.js"></script>
 </head>
 <body>
 	<div id="plane"></div>
 	<script type="text/javascript">
-		var game=new Phaser.Game(240,400,Phaser.CANVAS,"#plane",{
-			preload:preload,
-			create:create,
-			update:update,
-		});
-		function preload(){
-			console.log('preload');
+		var game=new Phaser.Game(240,400,Phaser.CANVAS,"#plane");
+		game.Mystates={};
+		game.Mystates.boot={
+			preload:function(){
+				game.load.image('loading', 'assets/plane/preloader.gif');
+				if(!game.device.desktop){
+					game.scale.scaleMode=Phaser.ScaleManager.EXACT_FIT;
+				}
+			},
+			create:function(){
+				game.state.start('load');
+			}
 		}
-		function create(){
-			console.log('create')
+		game.Mystates.load={
+			preload: function() {
+				var preloadSprite = game.add.sprite(10, game.height/2, 'loading');
+			    game.load.setPreloadSprite(preloadSprite);
+			    game.load.image('background', 'assets/plane/bg.jpg');
+			    game.load.image('copyright', 'assets/plane/copyright.png');
+			    game.load.spritesheet('myplane', 'assets/plane/myplane.png', 40, 40, 4);
+			    game.load.spritesheet('startbutton', 'assets/plane/startbutton.png', 100, 40, 2);
+			    game.load.spritesheet('replaybutton', 'assets/plane/replaybutton.png', 80, 30, 2);
+			    game.load.spritesheet('sharebutton', 'assets/plane/sharebutton.png', 80, 30, 2);
+			    game.load.image('mybullet', 'assets/plane/mybullet.png');
+			    game.load.image('bullet', 'assets/plane/bullet.png');
+			    game.load.image('enemy1', 'assets/plane/enemy1.png');
+			    game.load.image('enemy2', 'assets/plane/enemy2.png');
+			    game.load.image('enemy3', 'assets/plane/enemy3.png');
+			    game.load.spritesheet('explode1', 'assets/plane/explode1.png', 20, 20, 3);
+			    game.load.spritesheet('explode2', 'assets/plane/explode2.png', 30, 30, 3);
+			    game.load.spritesheet('explode3', 'assets/plane/explode3.png', 50, 50, 3);
+			    game.load.spritesheet('myexplode', 'assets/plane/myexplode.png', 40, 40, 3);
+			    game.load.image('award', 'assets/plane/award.png');
+			    game.load.audio('normalback', 'assets/plane/normalback.mp3');
+			    game.load.audio('playback', 'assets/plane/playback.mp3');
+			    game.load.audio('fashe', 'assets/plane/fashe.mp3');
+			    game.load.audio('crash1', 'assets/plane/crash1.mp3');
+			    game.load.audio('crash2', 'assets/plane/crash2.mp3');
+			    game.load.audio('crash3', 'assets/plane/crash3.mp3');
+			    game.load.audio('ao', 'assets/plane/ao.mp3');
+			    game.load.audio('pi', 'assets/plane/pi.mp3');
+			    game.load.audio('deng', 'assets/plane/deng.mp3');
+			    game.load.onFileComplete.add(function(process){
+      				console.log(process);
+    			});
+			},
+			create: function() {
+				game.state.start('play');
+			}
 		}
-		function update(){
-			console.log('update')
+		game.Mystates.start={
+			create: function(){
+				game.add.image(0,0,'background');
+				game.add.image(12,game.height-16,'copyright');
+				var myplane = game.add.sprite(100,100,'myplane');
+				myplane.animations.add('fly');
+				myplane.animations.play('fly',10,true);
+				game.add.button(70,200,'startbutton',this.onStartClick,this,1,1,0,1);
+			},
+			onStartClick: function(){
+				game.state.start('play');
+			}
 		}
 
+		game.Mystates.play={
+			create: function(){
+				game.physics.startSystem(Phaser.Physics.ARCADE);
+				var bg=game.add.tileSprite(0,0,game.width,game.height,'background');
+				bg.autoScroll(0,20);
+				this.myplane =game.add.sprite(100,100,'myplane');
+				this.myplane.animations.add('fly');
+				this.myplane.animations.play('fly',10,true);
+				game.physics.arcade.enable(this.myplane);
+				this.myplane.body.collideWorldBounds=true;
+				this.enemy=game.add.sprite(100,10,'enemy1');
+				game.physics.arcade.enable(this.enemy);
+				var tween=game.add.tween(this.myplane).to({y:game.height-40},1000,null,true);
+				tween.onComplete.add(this.onStart,this);
+
+			},
+			update:function(){
+				var now = new Date().getTime();
+				if (this.myplane.myStartFire && now-this.lastBulletTime > 500) {
+					var myBullet= game.add.sprite(this.myplane.x+15,this.myplane.y-7,'mybullet');
+					game.physics.enable(myBullet,Phaser.Physics.ARCADE);
+					myBullet.body.velocity.y=-200;
+					this.lastBulletTime=now;
+					this.myBullets.add(myBullet);
+				}
+				game.physics.arcade.overlap(this.myBullets,this.enemy,this.collisionHandler,null,this);
+			},
+			collisionHandler:function(enemy,bullet){
+				enemy.kill();
+				bullet.kill();
+			},
+			onStart: function(){
+				this.myplane.inputEnabled=true;
+				this.myplane.input.enableDrag();
+				this.myplane.myStartFire=true;
+				this.lastBulletTime=0;
+
+				this.myBullets=game.add.group();
+				this.myBullets.enableBody=true;
+
+
+				var style={font:"16px Arial",fill:"red"};
+				var text=game.add.text(0,0,"Score: 0",style);
+			}
+		}
+		
+		game.state.add('boot',game.Mystates.boot);
+		game.state.add('load',game.Mystates.load);
+		game.state.add('start',game.Mystates.start);
+		game.state.add('play',game.Mystates.play);
+		game.state.start('boot');
 	</script>
 </body>
 </html>
