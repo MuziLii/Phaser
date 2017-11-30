@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
 	<title>Document</title>
 	<style type="text/css">
 		body{
@@ -11,10 +12,49 @@
 		canvas{
 			margin: 0 auto;
 		}
+
+      	.logo {
+	        position: absolute;
+	        left: -1000px;
+	        top: -1000px;
+      	}
+      	.share {
+	        position: absolute;
+	        width: 100%;
+	        height: 100%;
+	        display: none;
+	        z-index: 2;
+      	}
+      	.share img {
+        	position: absolute;
+      	}
+      	.share .sharepng {
+	        width: 100%;
+	        height: 100%;
+	        top: 0px;
+	        left: 0px;
+      	}
+      	.logo {
+        	position: absolute;
+        	left: -1000px;
+        	top: -1000px;
+      	}
+      	.plane {
+	        position: absolute;
+	        width: 100%;
+	        height: 100%;
+      	}
 	</style>
 	<script type="text/javascript" src="phaser.min.js"></script>
 </head>
 <body>
+	<div class="logo">
+    	<img src="http://game.webxinxin.com/plane/assets/logo.jpg" alt="" />
+  	</div>
+	<div id="share" class="share">
+	    <img class="sharepng" src="assets/plane/share.png" alt="" />
+	    <img class="closebtn" src="assets/plane/close.png" alt="" onclick="onCloseShare();" />
+	</div>
 	<div id="plane"></div>
 	<script type="text/javascript">
 		var game=new Phaser.Game(240,400,Phaser.CANVAS,"#plane");
@@ -76,9 +116,19 @@
 				myplane.animations.add('fly');
 				myplane.animations.play('fly',10,true);
 				game.add.button(70,200,'startbutton',this.onStartClick,this,1,1,0,1);
+
+				//声音
+				this.normalback=game.add.audio('normalback',0.2,true);
+				try{
+					this.normalback.play();
+				}catch(e){
+
+				}
+
 			},
 			onStartClick: function(){
 				game.state.start('play');
+				// this.normalback.stop();
 			}
 		}
 
@@ -110,10 +160,27 @@
 					game.physics.arcade.overlap(this.myBullets,this.enemys,this.hitEnemy,null,this);
 					//敌方子弹和我方飞机碰撞检测
 					game.physics.arcade.overlap(this.enemyBullets,this.myplane,this.hitPlane,null,this);
+					//我方飞机碰撞奖牌
+					game.physics.arcade.overlap(this.awards,this.myplane,this.getAward,null,this);
+					//双方飞机碰撞
+					game.physics.arcade.overlap(this.enemys,this.myplane,this.crashEnemy,null,this);
 				}
-				
-
-				
+			},
+			crashEnemy:function(myplane,enemy){
+				myplane.kill();
+				var explode= game.add.sprite(myplane.x,myplane.y,'myexplode');
+				var anim=explode.animations.add('explode');
+				anim.play(30,false,false);
+				anim.onComplete.addOnce(function(){
+					explode.destroy();  
+					game.state.start('over');
+				});
+			},
+			getAward:function(myplane,award){
+				award.kill();
+				if(myplane.life<3){
+					myplane.life=myplane.life+1;
+				}
 			},
 			hitPlane:function(myplane,bullet){
 				
@@ -174,6 +241,21 @@
 				//分数
 				var style={font:"16px Arial",fill:"red"};
 				this.text=game.add.text(0,0,"Score: 0",style);
+				//奖牌组
+				this.awards=game.add.group();
+				//奖牌
+				game.time.events.loop(Phaser.Timer.SECOND*3, this.generateAward, this);
+			},
+			generateAward:function(){
+				var awardSize=game.cache.getImage('award');
+				var x= game.rnd.integerInRange(0,game.width-awardSize.width);
+				var y= -awardSize.height.height;
+				var award = this.awards.getFirstExists(false,true,x,y,'award');
+				game.physics.arcade.enable(award);
+				award.checkWorldBounds=true;
+				award.outOfBoundsKill=true;
+				award.body.velocity.y=300;
+
 			},
 			myPlaneFire:function(){
 				var getMyPlaneBullet=function(){
@@ -321,7 +403,8 @@
 				game.state.start('play');
 			},
 			onShareClick:function(){
-
+				document.title=makeTitle(game.score);
+				document.getElementById('share').style.display='block';
 			}
 		}
 		
@@ -331,6 +414,18 @@
 		game.state.add('play',game.Mystates.play);
 		game.state.add('over',game.Mystates.over);
 		game.state.start('boot');
+
+		var onCloseShare=function(){
+			document.getElementById('share').style.display='none';
+		}
+		var makeTitle = function(score) {
+			if(score < 1000) {
+			    return "简版飞机大战，还挺难的，我才" + game.score + "分，你能得多少分呢？";
+			} else {
+			    return "简版飞机大战，我是天才，得了" + game.score + "分，你能得多少分呢？";
+			}
+		}
+
 	</script>
 </body>
 </html>
